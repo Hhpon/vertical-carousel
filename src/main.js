@@ -3,6 +3,7 @@ import App from "./App.vue";
 import "./registerServiceWorker";
 import router from "./router";
 import store from "./store";
+import "common/scss/reset.scss";
 
 Vue.config.productionTip = false;
 
