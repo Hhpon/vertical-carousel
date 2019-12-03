@@ -4,16 +4,27 @@
       @touchstart.prevent="pageTouchStart"
       @touchmove.prevent="pageTouchMove"
       @touchend="pageTouchEnd"
-      v-for="item in pages"
-      :key="item"
-      class="pageItem"
-      ref="pageItem"
+      @transitionend="translateNode"
+      ref="reportWrapper"
     >
-      这是一页面{{ item }}
+      <div class="pageItem" v-for="item in pages" :key="item">
+        <div style="height: 30%;"></div>
+        <div class="left" ref="left">
+          这是一页面
+        </div>
+        <div class="right" ref="right">
+          {{ item }}
+        </div>
+      </div>
     </div>
   </div>
 </template>
 <script>
+import { prefixStyle } from "common/js/dom";
+
+const transform = prefixStyle("transform");
+const transitionDuration = prefixStyle("transitionDuration");
+
 export default {
   data() {
     return {
@@ -24,57 +35,59 @@ export default {
   created() {
     this.touch = {};
   },
+  mounted() {
+    this.translateNode();
+  },
   methods: {
     pageTouchStart(e) {
-      console.log("touchStart");
       this.touch.initiated = true;
       this.touch.moved = false;
       const touch = e.touches[0];
       this.touch.startX = touch.pageX;
       this.touch.startY = touch.pageY;
+      this.touch.isDown = false;
     },
     pageTouchMove(e) {
-      console.log("touchMove");
       if (!this.touch.initiated) {
         return;
       }
       const touch = e.touches[0];
-      const deltaX = touch.pageX - this.touch.startX;
+      // const deltaX = touch.pageX - this.touch.startX;
       const deltaY = touch.pageY - this.touch.startY;
-      if (Math.abs(deltaY) < Math.abs(deltaX)) {
-        return;
-      }
+      // if (Math.abs(deltaY) < Math.abs(deltaX)) {
+      //   return;
+      // }
       if (!this.touch.moved) {
         this.touch.moved = true;
       }
-      let offsetHeight = 0;
+      let offsetHeight = this.touch.offsetHeight;
       let offsetPercent = 0;
-      if (deltaY > 0) {
-        console.log("正在向下滑动");
+      if (deltaY > 0 && this.currentPage !== 0) {
+        // 鼠标向下滑动
         this.touch.isDown = true;
+        console.log("鼠标向下滑动，isdown是true");
         offsetPercent = -window.innerHeight + deltaY;
         offsetHeight = deltaY - this.currentPage * window.innerHeight;
-      } else {
+      } else if (deltaY < 0 && this.currentPage !== 5) {
+        // 鼠标向上滑动
         this.touch.isDown = false;
+        console.log("鼠标向上滑动,isdown是false");
         offsetPercent = deltaY;
         offsetHeight = deltaY - this.currentPage * window.innerHeight;
         // this.currentPage * window.innerHeight + offsetHeight
-        console.log("正在向上滑动");
       }
       this.touch.percent = Math.abs(offsetPercent / window.innerHeight);
-      console.log(this.touch.percent);
-      this.$refs.pageItem.forEach(ele => {
-        ele.style.transform = `translateY(${offsetHeight}px)`;
-      });
+      // this.$refs.reportWrapper.style[
+      //   transform
+      // ] = `translateY(${offsetHeight}px)`;
+      this.$refs.reportWrapper.style.transform = `translateY(${offsetHeight}px)`;
     },
     pageTouchEnd() {
-      console.log("touchEnd");
       if (!this.touch.moved) {
         return;
       }
       if (this.touch.isDown) {
         if (this.touch.percent < 0.75) {
-          console.log("触发向下换页");
           this.currentPage -= 1;
         }
       } else {
@@ -83,12 +96,26 @@ export default {
         }
       }
       this.touch.offsetHeight = -this.currentPage * window.innerHeight;
-      console.log(this.touch);
       this.touch.percent = 0;
-      this.$refs.pageItem.forEach(ele => {
-        ele.style.transform = `translateY(${this.touch.offsetHeight}px)`;
-        ele.style.transitionDuration = "0.3s";
-      });
+      this.$refs.reportWrapper.style[
+        transform
+      ] = `translateY(${this.touch.offsetHeight}px)`;
+      this.$refs.reportWrapper.style[transitionDuration] = ".3s";
+    },
+    translateNode() {
+      if (this.touch.isDown && this.currentPage !== 5) {
+        this.$refs.left[this.currentPage + 1].style[transform] =
+          "translateX(-100%)";
+        this.$refs.right[this.currentPage + 1].style[transform] =
+          "translateX(100%)";
+      } else if (!this.touch.isDown && this.currentPage !== 0) {
+        this.$refs.left[this.currentPage - 1].style[transform] =
+          "translateX(-100%)";
+        this.$refs.right[this.currentPage - 1].style[transform] =
+          "translateX(100%)";
+      }
+      this.$refs.left[this.currentPage].style[transform] = "translateX(0)";
+      this.$refs.right[this.currentPage].style[transform] = "translateX(0)";
     }
   }
 };
@@ -102,7 +129,6 @@ export default {
   .pageItem {
     color: #fff;
     font-size: 30px;
-    line-height: 100vh;
     text-align: center;
     width: 100vw;
     height: 100vh;
@@ -110,6 +136,14 @@ export default {
       rgba(0, 0, 255, 0.5),
       rgba(255, 255, 0, 0.5)
     );
+    .left {
+      transform: translateX(-100%);
+      transition-duration: 0.3s;
+    }
+    .right {
+      transform: translateX(100%);
+      transition-duration: 0.3s;
+    }
   }
 }
 </style>
