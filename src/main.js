@@ -4,6 +4,12 @@ import "./registerServiceWorker";
 import router from "./router";
 import store from "./store";
 import "common/scss/reset.scss";
+import VueAwesomeSwiper from "vue-awesome-swiper";
+
+// require styles
+import "swiper/dist/css/swiper.css";
+
+Vue.use(VueAwesomeSwiper /* { default global options } */);
 
 Vue.config.productionTip = false;
 

@@ -28,7 +28,7 @@ const transitionDuration = prefixStyle("transitionDuration");
 export default {
   data() {
     return {
-      pages: 6,
+      pages: 12,
       currentPage: 0
     };
   },
@@ -68,7 +68,7 @@ export default {
         console.log("鼠标向下滑动，isdown是true");
         offsetPercent = -window.innerHeight + deltaY;
         offsetHeight = deltaY - this.currentPage * window.innerHeight;
-      } else if (deltaY < 0 && this.currentPage !== 5) {
+      } else if (deltaY < 0 && this.currentPage !== 11) {
         // 鼠标向上滑动
         this.touch.isDown = false;
         console.log("鼠标向上滑动,isdown是false");
@@ -103,7 +103,7 @@ export default {
       this.$refs.reportWrapper.style[transitionDuration] = ".3s";
     },
     translateNode() {
-      if (this.touch.isDown && this.currentPage !== 5) {
+      if (this.touch.isDown && this.currentPage !== 11) {
         this.$refs.left[this.currentPage + 1].style[transform] =
           "translateX(-100%)";
         this.$refs.right[this.currentPage + 1].style[transform] =

@@ -1,13 +1,18 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 import Report from "../components/report/report";
+import Swiper from '@/components/swiper/swiper'
 
 Vue.use(VueRouter);
 
 const routes = [
   {
-    path: "/",
+    path: "/report",
     component: Report
+  },
+  {
+    path: '/swiper',
+    component: Swiper
   }
 ];
 
