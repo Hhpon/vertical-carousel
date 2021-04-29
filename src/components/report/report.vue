@@ -10,7 +10,7 @@
       <div class="pageItem" v-for="item in pages" :key="item">
         <div style="height: 30%;"></div>
         <div class="left" ref="left">
-          这是一页面
+          这是页面
         </div>
         <div class="right" ref="right">
           {{ item }}
