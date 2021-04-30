@@ -1,14 +1,18 @@
 <template>
   <div class="report">
-    <div
-      class="wrapper"
-      @touchstart.prevent="pageTouchStart"
-      @touchmove.prevent="pageTouchMove"
-      @touchend="pageTouchEnd"
-      @transitionend="translateNode"
-      ref="reportWrapper"
-    >
-      <div class="pageItem" v-for="item in pages" :key="item">
+    <div class="wrapper" ref="reportWrapper">
+      <div
+        class="pageItem"
+        v-for="(item, index) in pages"
+        :key="item"
+        :class="{
+          current: currentPage === index,
+          active: nextPage === index || lastCurrentPage === index
+        }"
+        @touchstart.prevent="pageTouchStart"
+        @touchmove.prevent="pageTouchMove"
+        @touchend="pageTouchEnd"
+      >
         <div style="height: 30%"></div>
         <div class="left" ref="left">这是页面</div>
         <div class="right" ref="right">
@@ -22,13 +26,15 @@
 import { prefixStyle } from "common/js/dom";
 
 const transform = prefixStyle("transform");
-const transitionDuration = prefixStyle("transitionDuration");
+// const transitionDuration = prefixStyle("transitionDuration");
 
 export default {
   data() {
     return {
       pages: 2,
+      lastCurrentPage: null,
       currentPage: 0,
+      nextPage: null,
       swiperLists: []
     };
   },
@@ -36,12 +42,11 @@ export default {
     this.touch = {};
   },
   mounted() {
-    this.translateNode();
-    console.dir(this.$refs.reportWrapper.children);
+    this.initRender();
   },
   methods: {
     initRender() {
-      this.swiperLists = this.$refs.reportWrapper.children
+      this.swiperLists = this.$refs.reportWrapper.children;
     },
     pageTouchStart(e) {
       this.touch.initiated = true;
@@ -65,53 +70,56 @@ export default {
       if (deltaY > 0 && this.currentPage !== 0) {
         // 鼠标向下滑动
         this.touch.isDown = true;
-        offsetPercent = -window.innerHeight + deltaY;
-        offsetHeight = deltaY - this.currentPage * window.innerHeight;
-      } else if (deltaY < 0 && this.currentPage !== 11) {
+        offsetPercent = deltaY;
+        offsetHeight = deltaY;
+        this.nextPage = this.currentPage - 1;
+      } else if (
+        deltaY < 0 &&
+        this.currentPage !== this.swiperLists.length - 1
+      ) {
         // 鼠标向上滑动
         this.touch.isDown = false;
         offsetPercent = deltaY;
-        offsetHeight = deltaY - this.currentPage * window.innerHeight;
+        offsetHeight = deltaY;
+        this.nextPage = this.currentPage + 1;
+      } else {
+        return;
       }
       this.touch.percent = Math.abs(offsetPercent / window.innerHeight);
-      this.$refs.reportWrapper.style.transform = `translateY(${offsetHeight}px)`;
+      this.swiperLists[this.currentPage].style[
+        transform
+      ] = `translateY(${offsetHeight}px)`;
+      this.swiperLists[this.nextPage].style[
+        transform
+      ] = `translateY(${offsetHeight +
+        (deltaY < 0 ? window.innerHeight : -window.innerHeight)}px)`;
     },
     pageTouchEnd() {
       if (!this.touch.moved) {
         return;
       }
-      if (this.touch.isDown) {
-        if (this.touch.percent < 0.75) {
-          this.currentPage -= 1;
-        }
-      } else {
-        if (this.touch.percent > 0.25) {
-          this.currentPage += 1;
-        }
+      this.lastCurrentPage = this.currentPage;
+      if (this.touch.percent > 0.25) {
+        this.currentPage = this.touch.isDown
+          ? this.currentPage - 1
+          : this.currentPage + 1;
       }
-      this.touch.offsetHeight = -this.currentPage * window.innerHeight;
       this.touch.percent = 0;
-      this.$refs.reportWrapper.style[
-        transform
-      ] = `translateY(${this.touch.offsetHeight}px)`;
-      this.$refs.reportWrapper.style[transitionDuration] = ".3s";
-    },
-    translateNode() {
-      if (this.touch.isDown && this.currentPage !== 11) {
-        this.$refs.left[this.currentPage + 1].style[transform] =
-          "translateX(-100%)";
-        this.$refs.right[this.currentPage + 1].style[transform] =
-          "translateX(100%)";
-      } else if (!this.touch.isDown && this.currentPage !== 0) {
-        this.$refs.left[this.currentPage - 1].style[transform] =
-          "translateX(-100%)";
-        this.$refs.right[this.currentPage - 1].style[transform] =
-          "translateX(100%)";
-      }
-      this.$refs.left[this.currentPage].style[transform] = "translateX(0)";
-      this.$refs.right[this.currentPage].style[transform] = "translateX(0)";
-    },
-  },
+      this.touch.initiated = false;
+      this.swiperLists[this.nextPage].style.cssText = "";
+      this.nextPage = null;
+      this.swiperLists[this.currentPage].style.cssText =
+        "transform: translateY(0px); transitionDuration: 0.3s;";
+      this.swiperLists[
+        this.lastCurrentPage
+      ].style.cssText = `transform: translateY(${
+        this.touch.isDown ? window.innerHeight : -window.innerHeight
+      }); transitionDuration: 0.3s;`;
+      setTimeout(() => {
+        this.swiperLists[this.currentPage].style.cssText = "";
+      }, 300);
+    }
+  }
 };
 </script>
 
@@ -132,33 +140,24 @@ export default {
       color: #fff;
       font-size: 30px;
       text-align: center;
-      background-image: linear-gradient(
-        rgba(0, 0, 255, 0.5),
-        rgba(255, 255, 0, 0.5)
-      );
-      // display: none;
+      background-color: blue;
+      display: none;
       position: absolute;
       top: 0;
       left: 0;
       z-index: 1;
       width: 100%;
       height: 100%;
-      .left {
-        transform: translateX(-100%);
-        transition-duration: 0.3s;
-      }
-      .right {
-        transform: translateX(100%);
-        transition-duration: 0.3s;
-      }
     }
     .current {
       display: block;
       z-index: 5;
+      will-change: transform;
     }
     .active {
       display: block;
       z-index: 4;
+      will-change: transform;
     }
   }
 }
