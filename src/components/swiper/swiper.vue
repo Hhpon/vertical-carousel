@@ -23,10 +23,14 @@
   </div>
 </template>
 <script>
-import { prefixStyle } from "common/js/dom";
+// import { prefixStyle } from "common/js/dom";
 
-const transform = prefixStyle("transform");
+// const transform = prefixStyle("transform");
 // const transitionDuration = prefixStyle("transitionDuration");
+const DIRECTION = {
+  FORWARD: -1,
+  BACKWARD: 1
+};
 
 export default {
   data() {
@@ -54,7 +58,7 @@ export default {
       const touch = e.touches[0];
       this.touch.startX = touch.pageX;
       this.touch.startY = touch.pageY;
-      this.touch.isDown = false;
+      this.touch.direction = null;
     },
     pageTouchMove(e) {
       if (!this.touch.initiated) {
@@ -65,56 +69,56 @@ export default {
       if (!this.touch.moved) {
         this.touch.moved = true;
       }
-      let offsetHeight = this.touch.offsetHeight;
-      let offsetPercent = 0;
       if (deltaY > 0 && this.currentPage !== 0) {
         // 鼠标向下滑动
-        this.touch.isDown = true;
-        offsetPercent = deltaY;
-        offsetHeight = deltaY;
+        this.touch.direction = DIRECTION.BACKWARD;
         this.nextPage = this.currentPage - 1;
       } else if (
         deltaY < 0 &&
         this.currentPage !== this.swiperLists.length - 1
       ) {
         // 鼠标向上滑动
-        this.touch.isDown = false;
-        offsetPercent = deltaY;
-        offsetHeight = deltaY;
+        this.touch.direction = DIRECTION.FORWARD;
         this.nextPage = this.currentPage + 1;
       } else {
         return;
       }
+      let offsetPercent = deltaY;
+      let offsetHeight = deltaY;
       this.touch.percent = Math.abs(offsetPercent / window.innerHeight);
-      this.swiperLists[this.currentPage].style[
-        transform
-      ] = `translateY(${offsetHeight}px)`;
-      this.swiperLists[this.nextPage].style[
-        transform
-      ] = `translateY(${offsetHeight +
-        (deltaY < 0 ? window.innerHeight : -window.innerHeight)}px)`;
+      this.swiperLists[
+        this.currentPage
+      ].style.cssText = `transform: translateY(${offsetHeight}px);`;
+      this.swiperLists[
+        this.nextPage
+      ].style.cssText = `transform: translateY(${offsetHeight +
+        (deltaY < 0 ? window.innerHeight : -window.innerHeight)}px);`;
     },
     pageTouchEnd() {
       if (!this.touch.moved) {
         return;
       }
-      this.lastCurrentPage = this.currentPage;
       if (this.touch.percent > 0.25) {
-        this.currentPage = this.touch.isDown
-          ? this.currentPage - 1
-          : this.currentPage + 1;
+        this.lastCurrentPage = this.currentPage;
+        this.currentPage =
+          this.touch.direction === DIRECTION.BACKWARD
+            ? this.currentPage - 1
+            : this.currentPage + 1;
       }
       this.touch.percent = 0;
       this.touch.initiated = false;
       this.swiperLists[this.nextPage].style.cssText = "";
-      this.nextPage = null;
       this.swiperLists[this.currentPage].style.cssText =
         "transform: translateY(0px); transitionDuration: 0.3s;";
       this.swiperLists[
         this.lastCurrentPage
       ].style.cssText = `transform: translateY(${
-        this.touch.isDown ? window.innerHeight : -window.innerHeight
-      }); transitionDuration: 0.3s;`;
+        this.touch.direction === DIRECTION.BACKWARD
+          ? window.innerHeight
+          : -window.innerHeight
+      }px); transitionDuration: 0.3s;`;
+      this.nextPage = null;
+      this.lastCurrentPage = null;
       setTimeout(() => {
         this.swiperLists[this.currentPage].style.cssText = "";
       }, 300);
