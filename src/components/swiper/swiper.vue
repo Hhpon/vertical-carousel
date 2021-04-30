@@ -109,17 +109,18 @@ export default {
       this.touch.initiated = false;
       this.swiperLists[this.nextPage].style.cssText = "";
       this.swiperLists[this.currentPage].style.cssText =
-        "transform: translateY(0px); transitionDuration: 0.3s;";
+        "transition-duration: 0.3s;transform: translateY(0px);";
       this.swiperLists[
         this.lastCurrentPage
       ].style.cssText = `transform: translateY(${
         this.touch.direction === DIRECTION.BACKWARD
           ? window.innerHeight
           : -window.innerHeight
-      }px); transitionDuration: 0.3s;`;
-      this.nextPage = null;
-      this.lastCurrentPage = null;
+      }px); transition-duration: 0.3s;`;
+
       setTimeout(() => {
+        this.nextPage = null;
+        this.lastCurrentPage = null;
         this.swiperLists[this.currentPage].style.cssText = "";
       }, 300);
     }
