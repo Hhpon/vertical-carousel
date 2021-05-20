@@ -1,14 +1,18 @@
 <template>
   <div class="report">
-    <div
-      class="wrapper"
-      @touchstart.prevent="pageTouchStart"
-      @touchmove.prevent="pageTouchMove"
-      @touchend="pageTouchEnd"
-      @transitionend="translateNode"
-      ref="reportWrapper"
-    >
-      <div class="pageItem" v-for="item in pages" :key="item">
+    <div class="wrapper" ref="reportWrapper">
+      <div
+        class="pageItem"
+        v-for="(item, index) in pages"
+        :key="item"
+        :class="{
+          current: currentPage === index,
+          active: nextPage === index || lastCurrentPage === index
+        }"
+        @touchstart.prevent="pageTouchStart"
+        @touchmove.prevent="pageTouchMove"
+        @touchend="pageTouchEnd"
+      >
         <div style="height: 30%"></div>
         <div class="left" ref="left">这是页面</div>
         <div class="right" ref="right">
@@ -19,16 +23,22 @@
   </div>
 </template>
 <script>
-import { prefixStyle } from "common/js/dom";
+// import { prefixStyle } from "common/js/dom";
 
-const transform = prefixStyle("transform");
-const transitionDuration = prefixStyle("transitionDuration");
+// const transform = prefixStyle("transform");
+// const transitionDuration = prefixStyle("transitionDuration");
+const DIRECTION = {
+  FORWARD: -1,
+  BACKWARD: 1
+};
 
 export default {
   data() {
     return {
       pages: 2,
+      lastCurrentPage: null,
       currentPage: 0,
+      nextPage: null,
       swiperLists: []
     };
   },
@@ -36,12 +46,11 @@ export default {
     this.touch = {};
   },
   mounted() {
-    this.translateNode();
-    console.dir(this.$refs.reportWrapper.children);
+    this.initRender();
   },
   methods: {
     initRender() {
-      this.swiperLists = this.$refs.reportWrapper.children
+      this.swiperLists = this.$refs.reportWrapper.children;
     },
     pageTouchStart(e) {
       this.touch.initiated = true;
@@ -49,7 +58,7 @@ export default {
       const touch = e.touches[0];
       this.touch.startX = touch.pageX;
       this.touch.startY = touch.pageY;
-      this.touch.isDown = false;
+      this.touch.direction = null;
     },
     pageTouchMove(e) {
       if (!this.touch.initiated) {
@@ -60,58 +69,62 @@ export default {
       if (!this.touch.moved) {
         this.touch.moved = true;
       }
-      let offsetHeight = this.touch.offsetHeight;
-      let offsetPercent = 0;
       if (deltaY > 0 && this.currentPage !== 0) {
         // 鼠标向下滑动
-        this.touch.isDown = true;
-        offsetPercent = -window.innerHeight + deltaY;
-        offsetHeight = deltaY - this.currentPage * window.innerHeight;
-      } else if (deltaY < 0 && this.currentPage !== 11) {
+        this.touch.direction = DIRECTION.BACKWARD;
+        this.nextPage = this.currentPage - 1;
+      } else if (
+        deltaY < 0 &&
+        this.currentPage !== this.swiperLists.length - 1
+      ) {
         // 鼠标向上滑动
-        this.touch.isDown = false;
-        offsetPercent = deltaY;
-        offsetHeight = deltaY - this.currentPage * window.innerHeight;
+        this.touch.direction = DIRECTION.FORWARD;
+        this.nextPage = this.currentPage + 1;
+      } else {
+        return;
       }
+      let offsetPercent = deltaY;
+      let offsetHeight = deltaY;
       this.touch.percent = Math.abs(offsetPercent / window.innerHeight);
-      this.$refs.reportWrapper.style.transform = `translateY(${offsetHeight}px)`;
+      this.swiperLists[
+        this.currentPage
+      ].style.cssText = `transform: translateY(${offsetHeight}px);`;
+      this.swiperLists[
+        this.nextPage
+      ].style.cssText = `transform: translateY(${offsetHeight +
+        (deltaY < 0 ? window.innerHeight : -window.innerHeight)}px);`;
     },
     pageTouchEnd() {
       if (!this.touch.moved) {
         return;
       }
-      if (this.touch.isDown) {
-        if (this.touch.percent < 0.75) {
-          this.currentPage -= 1;
-        }
-      } else {
-        if (this.touch.percent > 0.25) {
-          this.currentPage += 1;
-        }
+      if (this.touch.percent > 0.25) {
+        this.lastCurrentPage = this.currentPage;
+        this.currentPage =
+          this.touch.direction === DIRECTION.BACKWARD
+            ? this.currentPage - 1
+            : this.currentPage + 1;
       }
-      this.touch.offsetHeight = -this.currentPage * window.innerHeight;
       this.touch.percent = 0;
-      this.$refs.reportWrapper.style[
-        transform
-      ] = `translateY(${this.touch.offsetHeight}px)`;
-      this.$refs.reportWrapper.style[transitionDuration] = ".3s";
-    },
-    translateNode() {
-      if (this.touch.isDown && this.currentPage !== 11) {
-        this.$refs.left[this.currentPage + 1].style[transform] =
-          "translateX(-100%)";
-        this.$refs.right[this.currentPage + 1].style[transform] =
-          "translateX(100%)";
-      } else if (!this.touch.isDown && this.currentPage !== 0) {
-        this.$refs.left[this.currentPage - 1].style[transform] =
-          "translateX(-100%)";
-        this.$refs.right[this.currentPage - 1].style[transform] =
-          "translateX(100%)";
-      }
-      this.$refs.left[this.currentPage].style[transform] = "translateX(0)";
-      this.$refs.right[this.currentPage].style[transform] = "translateX(0)";
-    },
-  },
+      this.touch.initiated = false;
+      this.swiperLists[this.nextPage].style.cssText = "";
+      this.swiperLists[this.currentPage].style.cssText =
+        "transition-duration: 0.3s;transform: translateY(0px);";
+      this.swiperLists[
+        this.lastCurrentPage
+      ].style.cssText = `transform: translateY(${
+        this.touch.direction === DIRECTION.BACKWARD
+          ? window.innerHeight
+          : -window.innerHeight
+      }px); transition-duration: 0.3s;`;
+
+      setTimeout(() => {
+        this.nextPage = null;
+        this.lastCurrentPage = null;
+        this.swiperLists[this.currentPage].style.cssText = "";
+      }, 300);
+    }
+  }
 };
 </script>
 
@@ -132,33 +145,24 @@ export default {
       color: #fff;
       font-size: 30px;
       text-align: center;
-      background-image: linear-gradient(
-        rgba(0, 0, 255, 0.5),
-        rgba(255, 255, 0, 0.5)
-      );
-      // display: none;
+      background-color: blue;
+      display: none;
       position: absolute;
       top: 0;
       left: 0;
       z-index: 1;
       width: 100%;
       height: 100%;
-      .left {
-        transform: translateX(-100%);
-        transition-duration: 0.3s;
-      }
-      .right {
-        transform: translateX(100%);
-        transition-duration: 0.3s;
-      }
     }
     .current {
       display: block;
       z-index: 5;
+      will-change: transform;
     }
     .active {
       display: block;
       z-index: 4;
+      will-change: transform;
     }
   }
 }
