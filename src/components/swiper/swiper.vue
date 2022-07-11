@@ -10,7 +10,7 @@
           active: nextPage === index || lastCurrentPage === index
         }"
         @touchstart.prevent="pageTouchStart"
-        @touchmove.prevent="pageTouchMove"
+        @touchmove.passive="pageTouchMove"
         @touchend="pageTouchEnd"
       >
         <div style="height: 30%"></div>
@@ -23,10 +23,6 @@
   </div>
 </template>
 <script>
-// import { prefixStyle } from "common/js/dom";
-
-// const transform = prefixStyle("transform");
-// const transitionDuration = prefixStyle("transitionDuration");
 const DIRECTION = {
   FORWARD: -1,
   BACKWARD: 1
@@ -35,7 +31,7 @@ const DIRECTION = {
 export default {
   data() {
     return {
-      pages: 2,
+      pages: 20,
       lastCurrentPage: null,
       currentPage: 0,
       nextPage: null,
@@ -73,10 +69,7 @@ export default {
         // 鼠标向下滑动
         this.touch.direction = DIRECTION.BACKWARD;
         this.nextPage = this.currentPage - 1;
-      } else if (
-        deltaY < 0 &&
-        this.currentPage !== this.swiperLists.length - 1
-      ) {
+      } else if (deltaY < 0 && this.currentPage !== this.swiperLists.length - 1) {
         // 鼠标向上滑动
         this.touch.direction = DIRECTION.FORWARD;
         this.nextPage = this.currentPage + 1;
@@ -86,12 +79,8 @@ export default {
       let offsetPercent = deltaY;
       let offsetHeight = deltaY;
       this.touch.percent = Math.abs(offsetPercent / window.innerHeight);
-      this.swiperLists[
-        this.currentPage
-      ].style.cssText = `transform: translateY(${offsetHeight}px);`;
-      this.swiperLists[
-        this.nextPage
-      ].style.cssText = `transform: translateY(${offsetHeight +
+      this.swiperLists[this.currentPage].style.cssText = `transform: translateY(${offsetHeight}px);`;
+      this.swiperLists[this.nextPage].style.cssText = `transform: translateY(${offsetHeight +
         (deltaY < 0 ? window.innerHeight : -window.innerHeight)}px);`;
     },
     pageTouchEnd() {
@@ -100,28 +89,20 @@ export default {
       }
       if (this.touch.percent > 0.25) {
         this.lastCurrentPage = this.currentPage;
-        this.currentPage =
-          this.touch.direction === DIRECTION.BACKWARD
-            ? this.currentPage - 1
-            : this.currentPage + 1;
+        this.currentPage = this.touch.direction === DIRECTION.BACKWARD ? this.currentPage - 1 : this.currentPage + 1;
       }
       this.touch.percent = 0;
       this.touch.initiated = false;
-      this.swiperLists[this.nextPage].style.cssText = "";
-      this.swiperLists[this.currentPage].style.cssText =
-        "transition-duration: 0.3s;transform: translateY(0px);";
-      this.swiperLists[
-        this.lastCurrentPage
-      ].style.cssText = `transform: translateY(${
-        this.touch.direction === DIRECTION.BACKWARD
-          ? window.innerHeight
-          : -window.innerHeight
+      this.swiperLists[this.nextPage].style.cssText = '';
+      this.swiperLists[this.currentPage].style.cssText = 'transition-duration: 0.3s;transform: translateY(0px);';
+      this.swiperLists[this.lastCurrentPage].style.cssText = `transform: translateY(${
+        this.touch.direction === DIRECTION.BACKWARD ? window.innerHeight : -window.innerHeight
       }px); transition-duration: 0.3s;`;
 
       setTimeout(() => {
         this.nextPage = null;
         this.lastCurrentPage = null;
-        this.swiperLists[this.currentPage].style.cssText = "";
+        this.swiperLists[this.currentPage].style.cssText = '';
       }, 300);
     }
   }
